@@ -1,0 +1,27 @@
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${GOBID_PORT:-8080}:8080
+    volumes:
+      - ./:/app
+    depends_on:
+      - db
+
+  db:
+    image: postgres:latest
+    restart: unless-stopped
+    ports:
+      - 5480:5432
+    environment:
+      POSTGRES_USER: ${GOBID_DATABASE_USER}
+      POSTGRES_PASSWORD: ${GOBID_DATABASE_PASSWORD}
+      POSTGRES_DB: ${GOBID_DATABASE_NAME}
+    volumes:
+      - db:/var/lib/postgresql/data
+
+volumes:
+  db:
+    driver: local
