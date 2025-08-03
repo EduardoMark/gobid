@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/EduardoMark/gobid/internal/auth"
+	"github.com/EduardoMark/gobid/internal/auth/token"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,7 +25,9 @@ func BindRoutes(cfg Config) *chi.Mux {
 }
 
 func setupAuthRoutes(r chi.Router, pool *pgxpool.Pool) {
+	jwtService := token.NewJwtService()
+
 	authSvc := auth.NewAuthService(pool)
-	authHandler := auth.NewAuthHandler(authSvc)
+	authHandler := auth.NewAuthHandler(authSvc, jwtService)
 	authHandler.RegisterAuthRoutes(r)
 }

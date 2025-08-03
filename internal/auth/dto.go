@@ -27,3 +27,17 @@ func (r *SignupReq) Valid(ctx context.Context) validator.Evaluator {
 
 	return eval
 }
+
+type LoginReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (r *LoginReq) Valid(ctx context.Context) validator.Evaluator {
+	var eval validator.Evaluator
+
+	eval.CheckField(validator.Matches(r.Email, validator.EmailRX), "email", "this field must be a valid email")
+	eval.CheckField(validator.MinChars(r.Password, 8), "password", "this field must have least 8 characters")
+
+	return eval
+}

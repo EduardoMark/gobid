@@ -7,6 +7,7 @@ import (
 
 	"github.com/EduardoMark/gobid/internal/store/pgstore"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
@@ -15,6 +16,7 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, username, email, password, bio string) (uuid.UUID, error)
+	AuthLogin(ctx context.Context, email, password string) (uuid.UUID, error)
 }
 
 type AuthService struct {
@@ -30,6 +32,7 @@ func NewAuthService(pool *pgxpool.Pool) AuthService {
 }
 
 var ErrEmailAlreadyExist = errors.New("email already exists")
+var ErrInvalidCredentials = errors.New("invalid credentials")
 
 func (s AuthService) Create(ctx context.Context, username, email, password, bio string) (uuid.UUID, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), 12)
@@ -59,4 +62,26 @@ func (s AuthService) Create(ctx context.Context, username, email, password, bio 
 	}
 
 	return id, nil
+}
+
+func (s AuthService) AuthLogin(ctx context.Context, email, password string) (uuid.UUID, error) {
+	record, err := s.queries.GetUserByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return uuid.UUID{}, ErrInvalidCredentials
+		}
+
+		logrus.WithField(
+			"err", err.Error(),
+		).Error("AuthLogin")
+
+		return uuid.UUID{}, fmt.Errorf("auth login: %v", err)
+	}
+
+	isValidPassword := bcrypt.CompareHashAndPassword([]byte(record.PasswordHash), []byte(password))
+	if isValidPassword != nil {
+		return uuid.UUID{}, ErrInvalidCredentials
+	}
+
+	return record.ID, nil
 }
