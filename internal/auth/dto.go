@@ -41,3 +41,17 @@ func (r *LoginReq) Valid(ctx context.Context) validator.Evaluator {
 
 	return eval
 }
+
+type ChangePasswordReq struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+func (r *ChangePasswordReq) Valid(ctx context.Context) validator.Evaluator {
+	var eval validator.Evaluator
+
+	eval.CheckField(validator.MinChars(r.CurrentPassword, 8), "current_password", "this field must have least 8 characters")
+	eval.CheckField(validator.MinChars(r.NewPassword, 8), "new_password", "this field must have least 8 characters")
+
+	return eval
+}

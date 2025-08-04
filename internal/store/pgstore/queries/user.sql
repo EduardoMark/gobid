@@ -32,6 +32,11 @@ SET username = $2,
 WHERE id = $1
 RETURNING id, username, email, bio, created_at, updated_at;
 
+-- name: ChangePassword :exec
+UPDATE users
+SET password_hash = $2
+WHERE id = $1;
+
 -- name: DeleteUser :exec
 DELETE FROM users
 WHERE id = $1;

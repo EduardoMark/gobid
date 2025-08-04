@@ -12,6 +12,22 @@ import (
 	"github.com/google/uuid"
 )
 
+const changePassword = `-- name: ChangePassword :exec
+UPDATE users
+SET password_hash = $2
+WHERE id = $1
+`
+
+type ChangePasswordParams struct {
+	ID           uuid.UUID `json:"id"`
+	PasswordHash string    `json:"password_hash"`
+}
+
+func (q *Queries) ChangePassword(ctx context.Context, arg ChangePasswordParams) error {
+	_, err := q.db.Exec(ctx, changePassword, arg.ID, arg.PasswordHash)
+	return err
+}
+
 const checkEmailExistsExcludingID = `-- name: CheckEmailExistsExcludingID :one
 SELECT EXISTS(
   SELECT 1
