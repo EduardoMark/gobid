@@ -7,9 +7,30 @@ package pgstore
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
+
+const checkEmailExistsExcludingID = `-- name: CheckEmailExistsExcludingID :one
+SELECT EXISTS(
+  SELECT 1
+  FROM users
+  WHERE email = $1 AND id != $2
+)
+`
+
+type CheckEmailExistsExcludingIDParams struct {
+	Email string    `json:"email"`
+	ID    uuid.UUID `json:"id"`
+}
+
+func (q *Queries) CheckEmailExistsExcludingID(ctx context.Context, arg CheckEmailExistsExcludingIDParams) (bool, error) {
+	row := q.db.QueryRow(ctx, checkEmailExistsExcludingID, arg.Email, arg.ID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
@@ -120,28 +141,47 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (*User, error) 
 	return &i, err
 }
 
-const updateUser = `-- name: UpdateUser :exec
+const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET username = $2,
     email = $3,
-    password_hash = $4,
+    bio = $4,
     updated_at = now()
 WHERE id = $1
+RETURNING id, username, email, bio, created_at, updated_at
 `
 
 type UpdateUserParams struct {
-	ID           uuid.UUID `json:"id"`
-	Username     string    `json:"username"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"password_hash"`
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+	Bio      string    `json:"bio"`
 }
 
-func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
-	_, err := q.db.Exec(ctx, updateUser,
+type UpdateUserRow struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Bio       string    `json:"bio"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (*UpdateUserRow, error) {
+	row := q.db.QueryRow(ctx, updateUser,
 		arg.ID,
 		arg.Username,
 		arg.Email,
-		arg.PasswordHash,
+		arg.Bio,
 	)
-	return err
+	var i UpdateUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Bio,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
 }

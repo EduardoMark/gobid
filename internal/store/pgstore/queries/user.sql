@@ -16,13 +16,21 @@ WHERE email = $1;
 -- name: GetAllUsers :many
 SELECT * FROM users;
 
--- name: UpdateUser :exec
+-- name: CheckEmailExistsExcludingID :one
+SELECT EXISTS(
+  SELECT 1
+  FROM users
+  WHERE email = $1 AND id != $2
+);
+
+-- name: UpdateUser :one
 UPDATE users
 SET username = $2,
     email = $3,
-    password_hash = $4,
+    bio = $4,
     updated_at = now()
-WHERE id = $1;
+WHERE id = $1
+RETURNING id, username, email, bio, created_at, updated_at;
 
 -- name: DeleteUser :exec
 DELETE FROM users
