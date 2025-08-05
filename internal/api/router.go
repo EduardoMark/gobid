@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/EduardoMark/gobid/internal/auth"
 	"github.com/EduardoMark/gobid/internal/auth/token"
+	"github.com/EduardoMark/gobid/internal/products"
 	"github.com/EduardoMark/gobid/internal/users"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -35,4 +36,8 @@ func setupAuthRoutes(r chi.Router, pool *pgxpool.Pool) {
 	userSvc := users.NewUserService(pool)
 	userHandler := users.NewUserHandler(userSvc, jwtService)
 	userHandler.RegisterUserRoutes(r)
+
+	productSvc := products.NewProductService(pool)
+	productHandler := products.NewProductHandler(productSvc, jwtService)
+	productHandler.RegisterProductsRoutes(r)
 }
